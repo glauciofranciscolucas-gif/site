@@ -135,7 +135,8 @@ interface User {
 interface SiteConfig {
   $id: string;
   site_name: string;
-  who_api_key: string;
+  paypal_client_id: string;
+  paypal_me_username?: string;
   stripe_publishable_key: string;
   stripe_secret_key: string;
   telegram_username: string;
@@ -221,7 +222,8 @@ const Admin: FC = () => {
   const [purchases, setPurchases] = useState<any[]>([]);
   const [loadingPurchases, setLoadingPurchases] = useState(false);
   const [siteName, setSiteName] = useState('');
-  const [whoApiKey, setWhoApiKey] = useState('');
+  const [paypalClientId, setPaypalClientId] = useState('');
+  const [paypalMeUsername, setPaypalMeUsername] = useState('');
   const [stripePublishableKey, setStripePublishableKey] = useState('');
   const [stripeSecretKey, setStripeSecretKey] = useState('');
   const [telegramUsername, setTelegramUsername] = useState('');
@@ -401,7 +403,8 @@ const Admin: FC = () => {
       const config: SiteConfig = {
         $id: configData.id || 'site-config',
         site_name: configData.site_name || '',
-        who_api_key: configData.who_api_key || '',
+        paypal_client_id: configData.paypal_client_id || '',
+        paypal_me_username: configData.paypal_me_username || '',
         stripe_publishable_key: configData.stripe_publishable_key || '',
         stripe_secret_key: configData.stripe_secret_key || '',
         telegram_username: configData.telegram_username || '',
@@ -413,7 +416,8 @@ const Admin: FC = () => {
 
       setSiteConfig(config);
       setSiteName(config.site_name);
-      setWhoApiKey(config.who_api_key);
+      setPaypalClientId(config.paypal_client_id);
+      setPaypalMeUsername(config.paypal_me_username || '');
       setStripePublishableKey(config.stripe_publishable_key || '');
       setStripeSecretKey(config.stripe_secret_key || '');
       setTelegramUsername(config.telegram_username);
@@ -725,7 +729,8 @@ const Admin: FC = () => {
 
       const configData = {
         siteName: siteName,
-        whoApiKey: whoApiKey,
+        paypalClientId: paypalClientId,
+        paypalMeUsername: paypalMeUsername,
         stripePublishableKey: stripePublishableKey,
         stripeSecretKey: stripeSecretKey,
         telegramUsername: telegramUsername,
@@ -750,7 +755,8 @@ const Admin: FC = () => {
       const API_BASE_URL = import.meta.env.DEV ? 'http://localhost:3000' : (import.meta.env.VITE_API_URL || '');
       const payload: any = {
         site_name: configData.siteName,
-        who_api_key: configData.whoApiKey,
+        paypal_client_id: configData.paypalClientId,
+        paypal_me_username: configData.paypalMeUsername,
         stripe_publishable_key: configData.stripePublishableKey,
         stripe_secret_key: configData.stripeSecretKey,
         telegram_username: configData.telegramUsername,
@@ -1250,7 +1256,7 @@ const Admin: FC = () => {
                             <Chip 
                               label={purchase.payment_method} 
                               size="small" 
-                              color={purchase.payment_method === 'stripe' ? 'primary' : purchase.payment_method === 'who' ? 'secondary' : 'default'}
+                              color={purchase.payment_method === 'stripe' ? 'primary' : purchase.payment_method === 'paypal' ? 'secondary' : 'default'}
                             />
                           </TableCell>
                           <TableCell>
@@ -1352,13 +1358,21 @@ const Admin: FC = () => {
                   
                   <TextField
                     fullWidth
-                    label="Who API Key"
-                    value={whoApiKey}
-                    onChange={(e) => setWhoApiKey(e.target.value)}
+                    label="PayPal Client ID"
+                    value={paypalClientId}
+                    onChange={(e) => setPaypalClientId(e.target.value)}
                     variant="outlined"
-                    type="password"
                     sx={{ mb: 2 }}
-                    helperText="Enter your Whop API key (apik_...)"
+                  />
+                  
+                  <TextField
+                    fullWidth
+                    label="PayPal.me Username"
+                    value={paypalMeUsername}
+                    onChange={(e) => setPaypalMeUsername(e.target.value)}
+                    variant="outlined"
+                    placeholder="@username"
+                    sx={{ mb: 2 }}
                   />
                   
                   <TextField
@@ -1624,10 +1638,10 @@ const Admin: FC = () => {
                 
                 <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2" color="text.secondary">
-                    Whop API Key
+                    PayPal Client ID
                   </Typography>
                   <Typography variant="body1" sx={{ mb: 2 }}>
-                    {siteConfig.who_api_key ? '***' + siteConfig.who_api_key.slice(-4) : 'Not set'}
+                    {siteConfig.paypal_client_id ? '***' + siteConfig.paypal_client_id.slice(-4) : 'Not set'}
                   </Typography>
                   
                   <Typography variant="subtitle2" color="text.secondary">
@@ -1953,7 +1967,7 @@ const Admin: FC = () => {
                             <Chip 
                               label={purchase.payment_method} 
                               size="small" 
-                              color={purchase.payment_method === 'stripe' ? 'primary' : purchase.payment_method === 'who' ? 'secondary' : 'default'}
+                              color={purchase.payment_method === 'stripe' ? 'primary' : purchase.payment_method === 'paypal' ? 'secondary' : 'default'}
                             />
                           </TableCell>
                           <TableCell>

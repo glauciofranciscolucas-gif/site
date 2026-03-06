@@ -1,13 +1,13 @@
 import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { jsonDatabaseService } from '../services/JSONDatabaseService';
-import { SiteConfigData } from '../services/WasabiMetadataService';
+import { jsonDatabaseService, SiteConfigData } from '../services/JSONDatabaseService';
 import { SupabaseService } from '../services/SupabaseService';
 
 // Define the site config interface - mantém compatibilidade com o frontend
 interface SiteConfig {
   $id: string;
   site_name: string;
-  who_api_key: string;
+  paypal_client_id: string;
+  paypal_me_username?: string; // For PayPal.me integration
   stripe_publishable_key: string;
   stripe_secret_key: string;
   telegram_username: string;
@@ -31,7 +31,8 @@ interface SiteConfig {
 // Define the context interface
 interface SiteConfigContextType {
   siteName: string;
-  whoApiKey: string;
+  paypalClientId: string;
+  paypalMeUsername: string; // For PayPal.me integration
   stripePublishableKey: string;
   stripeSecretKey: string;
   telegramUsername: string;
@@ -60,7 +61,8 @@ interface SiteConfigContextType {
 // Create the context with default values
 const SiteConfigContext = createContext<SiteConfigContextType>({
   siteName: 'VideosPlus',
-  whoApiKey: '',
+  paypalClientId: '',
+  paypalMeUsername: '',
   stripePublishableKey: '',
   stripeSecretKey: '',
   telegramUsername: '',
@@ -97,7 +99,8 @@ export const SiteConfigProvider = ({ children }: { children: ReactNode }) => {
     return {
       $id: 'site-config', // ID fixo para compatibilidade
       site_name: data.siteName,
-      who_api_key: data.whoApiKey,
+      paypal_client_id: data.paypalClientId,
+      paypal_me_username: data.paypalMeUsername,
       stripe_publishable_key: data.stripePublishableKey,
       stripe_secret_key: data.stripeSecretKey,
       telegram_username: data.telegramUsername,
@@ -127,7 +130,8 @@ export const SiteConfigProvider = ({ children }: { children: ReactNode }) => {
           if (supa) {
             configData = {
               siteName: supa.site_name || 'VideosPlus',
-              whoApiKey: supa.who_api_key || '',
+              paypalClientId: supa.paypal_client_id || '',
+              paypalMeUsername: supa.paypal_me_username || '',
               stripePublishableKey: supa.stripe_publishable_key || '',
               stripeSecretKey: supa.stripe_secret_key || '',
               telegramUsername: supa.telegram_username || '',
@@ -157,7 +161,8 @@ export const SiteConfigProvider = ({ children }: { children: ReactNode }) => {
         const defaultConfig: SiteConfig = {
           $id: 'site-config',
           site_name: 'VideosPlus',
-          who_api_key: '',
+          paypal_client_id: '',
+          paypal_me_username: '',
           stripe_publishable_key: '',
           stripe_secret_key: '',
           telegram_username: '',
@@ -196,7 +201,8 @@ export const SiteConfigProvider = ({ children }: { children: ReactNode }) => {
       if (SupabaseService.isConfigured()) {
         const supaPayload: any = {
           site_name: updates.siteName,
-          who_api_key: updates.whoApiKey,
+          paypal_client_id: updates.paypalClientId,
+          paypal_me_username: updates.paypalMeUsername,
           stripe_publishable_key: updates.stripePublishableKey,
           stripe_secret_key: updates.stripeSecretKey,
           telegram_username: updates.telegramUsername,
@@ -216,27 +222,7 @@ export const SiteConfigProvider = ({ children }: { children: ReactNode }) => {
         await fetchSiteConfig();
       } else {
       const currentConfig = await jsonDatabaseService.getSiteConfig();
-      if (!currentConfig) {
-        throw new Error('Current site config not found');
-      }
-        const updatedConfig: SiteConfigData = { 
-          ...currentConfig, 
-          ...updates,
-          siteName: updates.siteName ?? currentConfig.siteName,
-          whoApiKey: updates.whoApiKey ?? currentConfig.whoApiKey,
-          stripePublishableKey: updates.stripePublishableKey ?? currentConfig.stripePublishableKey,
-          stripeSecretKey: updates.stripeSecretKey ?? currentConfig.stripeSecretKey,
-          telegramUsername: updates.telegramUsername ?? currentConfig.telegramUsername,
-          videoListTitle: updates.videoListTitle ?? currentConfig.videoListTitle,
-          crypto: updates.crypto ?? currentConfig.crypto,
-          emailHost: updates.emailHost ?? currentConfig.emailHost,
-          emailPort: updates.emailPort ?? currentConfig.emailPort,
-          emailSecure: updates.emailSecure ?? currentConfig.emailSecure,
-          emailUser: updates.emailUser ?? currentConfig.emailUser,
-          emailPass: updates.emailPass ?? currentConfig.emailPass,
-          emailFrom: updates.emailFrom ?? currentConfig.emailFrom,
-          wasabiConfig: updates.wasabiConfig ?? currentConfig.wasabiConfig
-        };
+        const updatedConfig: SiteConfigData = { ...currentConfig, ...updates };
       await jsonDatabaseService.updateSiteConfig(updatedConfig);
       const siteConfig = convertToSiteConfig(updatedConfig);
       setConfig(siteConfig);
@@ -259,7 +245,8 @@ export const SiteConfigProvider = ({ children }: { children: ReactNode }) => {
   // Context value
   const value = {
     siteName: config?.site_name || 'VideosPlus',
-    whoApiKey: config?.who_api_key || '',
+    paypalClientId: config?.paypal_client_id || '',
+    paypalMeUsername: config?.paypal_me_username || '',
     stripePublishableKey: config?.stripe_publishable_key || '',
     stripeSecretKey: config?.stripe_secret_key || '',
     telegramUsername: config?.telegram_username || '',

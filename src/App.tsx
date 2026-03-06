@@ -13,10 +13,6 @@ import Videoplayer from './pages/Videoplayer';
 import Admin from './pages/Admin';
 import Home from './pages/Home';
 import PaymentSuccess from './pages/PaymentSuccess';
-import FAQ from './pages/FAQ';
-import About from './pages/About';
-import Terms from './pages/Terms';
-import Privacy from './pages/Privacy';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
@@ -34,7 +30,7 @@ const AppContent: FC = () => {
   const [showSplash, setShowSplash] = useState(false);
   const [showAgeVerification, setShowAgeVerification] = useState(true);
   const location = useLocation();
-  const enableSplash = false; // feature-flag: disable splash animation
+  const enableSplash = true; // feature-flag: enable splash to match new design
   
   // Atualizar o título da página quando o siteName mudar
   useEffect(() => {
@@ -100,12 +96,6 @@ const AppContent: FC = () => {
           
           {/* Payment Success */}
           <Route path="/payment-success" element={<PaymentSuccess />} />
-          
-          {/* Info Pages */}
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
           
           {/* Admin area (protected) */}
           <Route 

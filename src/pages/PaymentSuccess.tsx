@@ -33,7 +33,7 @@ interface PaymentData {
   videoPrice: number;
   productLink?: string;
   transactionId: string;
-  paymentMethod: 'stripe' | 'who';
+  paymentMethod: 'stripe' | 'paypal';
   buyerEmail?: string;
   buyerName?: string;
 }
@@ -60,78 +60,12 @@ const PaymentSuccess: FC = () => {
 
         // Get parameters from URL
         const videoId = searchParams.get('video_id');
-        const sessionId = searchParams.get('session_id'); // Pode ser null para Whop
+        const sessionId = searchParams.get('session_id');
         const paymentSuccess = searchParams.get('payment_success');
-        const paymentMethod = searchParams.get('payment_method') as 'stripe' | 'who' || 'stripe';
+        const paymentMethod = searchParams.get('payment_method') as 'stripe' | 'paypal' || 'stripe';
         const buyerEmail = searchParams.get('buyer_email');
         const buyerName = searchParams.get('buyer_name');
-        const offerType = searchParams.get('offer_type'); // Para promo de todos os vídeos
 
-        // Se não tem video_id, pode ser oferta de todos os vídeos
-        if (!videoId && !offerType) {
-          setError('Invalid payment data. Video ID or offer type not found.');
-          setLoading(false);
-          return;
-        }
-
-        // Para oferta de todos os vídeos, usar lógica diferente
-        if (offerType === 'all_content') {
-          const price = parseFloat(searchParams.get('price') || '100');
-          const generatedSessionId = sessionId || `who_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          
-          const data: PaymentData = {
-            videoId: 'all_videos',
-            videoTitle: 'All Content Access',
-            videoPrice: price,
-            productLink: 'Contact support via Telegram for full access',
-            transactionId: generatedSessionId,
-            paymentMethod,
-            buyerEmail: buyerEmail || undefined,
-            buyerName: buyerName || undefined,
-          };
-
-          setPaymentData(data);
-
-          // Salvar compra no Supabase
-          try {
-            await SupabaseService.createPurchase({
-              video_id: 'all_videos',
-              buyer_email: buyerEmail || 'unknown@example.com',
-              buyer_name: buyerName || null,
-              transaction_id: generatedSessionId,
-              payment_method: paymentMethod,
-              amount: price,
-              currency: 'usd',
-              status: 'completed',
-              video_title: 'All Content Access',
-              product_link: null,
-              metadata: { sessionId: generatedSessionId, paymentMethod, offerType: 'all_content' }
-            });
-            console.log('All content purchase saved to Supabase successfully');
-          } catch (dbError) {
-            console.error('Error saving all content purchase to Supabase:', dbError);
-          }
-
-          // Enviar notificação Telegram
-          try {
-            await TelegramService.sendSaleNotification({
-              videoTitle: 'All Content Access',
-              videoPrice: price,
-              buyerEmail: buyerEmail || undefined,
-              buyerName: buyerName || undefined,
-              transactionId: generatedSessionId,
-              paymentMethod,
-              timestamp: new Date().toLocaleString('pt-BR')
-            });
-          } catch (telegramError) {
-            console.error('Failed to send Telegram notification:', telegramError);
-          }
-
-          setLoading(false);
-          return;
-        }
-
-        // Fluxo normal para vídeo individual
         if (!videoId) {
           setError('Invalid payment data. Video ID not found.');
           setLoading(false);
@@ -146,15 +80,12 @@ const PaymentSuccess: FC = () => {
           return;
         }
 
-        // Gerar um transaction ID único se não tiver session_id
-        const generatedTransactionId = sessionId || `${paymentMethod}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
         const data: PaymentData = {
           videoId,
           videoTitle: video.title,
           videoPrice: video.price,
           productLink: video.product_link,
-          transactionId: generatedTransactionId,
+          transactionId: sessionId || `payment_${Date.now()}`,
           paymentMethod,
           buyerEmail: buyerEmail || undefined,
           buyerName: buyerName || undefined,
@@ -168,14 +99,14 @@ const PaymentSuccess: FC = () => {
             video_id: videoId,
             buyer_email: buyerEmail || 'unknown@example.com',
             buyer_name: buyerName || null,
-            transaction_id: generatedTransactionId,
+            transaction_id: sessionId || `payment_${Date.now()}`,
             payment_method: paymentMethod,
             amount: video.price,
-            currency: 'usd',
+            currency: 'eur',
             status: 'completed',
             video_title: video.title,
             product_link: video.product_link || null,
-            metadata: { sessionId: generatedTransactionId, paymentMethod }
+            metadata: { sessionId, paymentMethod }
           });
           console.log('Purchase saved to Supabase successfully');
         } catch (dbError) {
@@ -190,7 +121,7 @@ const PaymentSuccess: FC = () => {
             videoPrice: video.price,
             buyerEmail: buyerEmail || undefined,
             buyerName: buyerName || undefined,
-            transactionId: generatedTransactionId,
+            transactionId: sessionId || `payment_${Date.now()}`,
             paymentMethod,
             timestamp: new Date().toLocaleString('pt-BR')
           });

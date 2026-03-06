@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { FC } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -35,7 +35,7 @@ import Backdrop from '@mui/material/Backdrop';
 import IconButton from '@mui/material/IconButton';
 import { useTheme } from '@mui/material/styles';
 import { StripeService } from '../services/StripeService';
-import { WhoService } from '../services/WhoService';
+import { PayPalButtons, PayPalScriptProvider } from '@paypal/react-paypal-js';
 import Chip from '@mui/material/Chip';
 
 // Extend Video interface to include product_link
@@ -66,9 +66,8 @@ const cryptoIcons: Record<string, JSX.Element> = {
 const VideoPlayer: FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const { telegramUsername, stripePublishableKey, cryptoWallets, siteName, whoApiKey, loading: configLoading } = useSiteConfig();
+  const { telegramUsername, stripePublishableKey, cryptoWallets, siteName, paypalClientId, loading: configLoading } = useSiteConfig();
   const [video, setVideo] = useState<Video | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [videoSources, setVideoSources] = useState<Array<{ id: string; source_file_id: string }>>([]);
@@ -90,29 +89,15 @@ const VideoPlayer: FC = () => {
   const theme = useTheme();
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
   const [isVideoReady, setIsVideoReady] = useState(false);
-  const [showCancelMessage, setShowCancelMessage] = useState(false);
 
-  // Debug: Log Whop API key when it changes
+  // Debug: Log PayPal client ID when it changes
   useEffect(() => {
-    if (!whoApiKey && !configLoading) {
-      console.warn('[Whop] API Key is empty or not configured');
+    if (paypalClientId) {
+      console.log('[PayPal] Client ID loaded:', paypalClientId.substring(0, 10) + '...');
+    } else if (!configLoading) {
+      console.warn('[PayPal] Client ID is empty or not configured');
     }
-  }, [whoApiKey, configLoading]);
-
-  // Detectar se o pagamento foi cancelado
-  useEffect(() => {
-    const paymentCanceled = searchParams.get('payment_canceled');
-    if (paymentCanceled === 'true') {
-      setShowCancelMessage(true);
-      console.log('✅ REDIRECIONAMENTO WHOP FUNCIONANDO! URL contém: payment_canceled=true');
-      // Limpar o parâmetro da URL após 8 segundos
-      setTimeout(() => {
-        setShowCancelMessage(false);
-        searchParams.delete('payment_canceled');
-        setSearchParams(searchParams);
-      }, 8000);
-    }
-  }, [searchParams, setSearchParams]);
+  }, [paypalClientId, configLoading]);
 
   useEffect(() => {
     const loadVideo = async () => {
@@ -145,12 +130,14 @@ const VideoPlayer: FC = () => {
         // Get preview or first source URL
         try {
           const sources = await VideoService.getVideoSources(id);
+          console.log('[videoplayer] Found sources:', sources.length, sources);
           setVideoSources(sources.map(s => ({ id: s.id, source_file_id: s.source_file_id })));
           const resolved: string[] = [];
           for (const s of sources) {
             const u = await VideoService.getFileUrlById(s.source_file_id);
             if (u) resolved.push(u);
           }
+          console.log('[videoplayer] Resolved URLs:', resolved.length, resolved);
           setSourceUrls(resolved);
           
           // Combine main video with sources for navigation
@@ -167,6 +154,8 @@ const VideoPlayer: FC = () => {
           allUrls.push(...resolved);
           setAllVideoUrls(allUrls);
           setCurrentSourceIndex(0);
+          
+          console.log('[videoplayer] All video URLs (main + sources):', allUrls.length, allUrls);
         } catch (err) {
           console.error('Error loading preview video:', err);
           // Don't set error, just log it - the thumbnail will be shown instead
@@ -379,45 +368,75 @@ Please let me know how to proceed with payment.`;
 
 
 
-  // Handle Whop payment (similar to Stripe)
-  const handleWhoPaymentRedirect = async () => {
-    if (!video || !whoApiKey) {
-      setPurchaseError('Whop configuration is missing or video information not available');
-      return;
+  // Create PayPal order
+  const createOrder = (_: any, actions: any) => {
+    if (!video) {
+      setPurchaseError('Video information not available');
+      return Promise.reject('Video information not available');
     }
     
     try {
-      setIsStripeLoading(true);
+      // Usar um nome de produto genérico em vez do nome do vídeo
+      const genericProductName = getRandomProductName();
       
-      // Initialize Whop
-      WhoService.initWho(whoApiKey);
+      // Armazenar o nome do produto para uso posterior
+      setPurchasedProductName(genericProductName);
       
-      // Generate a random product name
-      const randomProductName = getRandomProductName();
-      setPurchasedProductName(randomProductName);
-      
-      // Build success and cancel URLs (with # for HashRouter)
-      // Nota: session_id será gerado automaticamente na página de sucesso
-      const successUrl = `${window.location.origin}/#/payment-success?video_id=${id}&payment_method=who`;
-      const cancelUrl = `${window.location.origin}/#/video/${id}?payment_canceled=true`;
-      
-      // Create checkout session
-      const sessionId = await WhoService.createCheckoutSession(
-        video.price,
-        'usd',
-        randomProductName,
-        successUrl,
-        cancelUrl
-      );
-      
-      // Redirect to checkout
-      await WhoService.redirectToCheckout(sessionId);
-      
+      return actions.order.create({
+        purchase_units: [
+          {
+            description: genericProductName,
+            amount: {
+              currency_code: 'USD',
+              value: video.price.toString()
+            }
+          }
+        ]
+      });
     } catch (error) {
-      console.error('Error processing Whop payment:', error);
-      setPurchaseError('Failed to initialize Whop payment. Please try again.');
-    } finally {
-      setIsStripeLoading(false);
+      console.error('Error creating PayPal order:', error);
+      setPurchaseError('Failed to create payment order. Please try again.');
+      return Promise.reject('Failed to create order');
+    }
+  };
+
+  // Handle PayPal approval
+  const onApprove = async (_: any, actions: any) => {
+    try {
+      // Capture the funds from PayPal
+      const orderData = await actions.order.capture();
+      console.log('Order data:', orderData);
+      
+      if (!video) {
+        setPurchaseError('Video information not available');
+        return;
+      }
+      
+      // Usar um ID temporário se o usuário não estiver logado
+      const userId = user ? user.$id : 'guest-' + Date.now();
+      
+      try {
+        // Redirect to payment success page with PayPal data (using HashRouter format)
+        let successUrl = `${window.location.origin}/#/payment-success?video_id=${video.$id}&session_id=${orderData.id}&payment_method=paypal`;
+        
+        if (orderData.payer?.email_address) {
+          successUrl += `&buyer_email=${encodeURIComponent(orderData.payer.email_address)}`;
+        }
+        
+        if (orderData.payer?.name?.given_name) {
+          successUrl += `&buyer_name=${encodeURIComponent(orderData.payer.name.given_name)}`;
+        }
+        
+        // Redirect to success page
+        window.location.href = successUrl;
+        return;
+      } catch (error) {
+        console.error('Error processing payment:', error);
+        setPurchaseError('Payment processing failed. Please try again later.');
+      }
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      setPurchaseError('Payment processing failed. Please try again later.');
     }
   };
 
@@ -559,6 +578,8 @@ I'm sending the payment from my wallet. Please confirm the transaction and provi
               onPause={handleVideoPause}
                 onClick={handleVideoInteraction}
                 onMouseOver={handleVideoInteraction}
+                onLoadStart={() => console.log('Video load started:', allVideoUrls[currentSourceIndex])}
+                onLoadedData={() => console.log('Video data loaded:', allVideoUrls[currentSourceIndex])}
                 onError={(e) => {
                   console.error('Video load error:', e);
                   console.error('Video URL:', allVideoUrls[currentSourceIndex]);
@@ -596,6 +617,10 @@ I'm sending the payment from my wallet. Please confirm the transaction and provi
               component="img"
               image={video?.thumbnailUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4MCIgaGVpZ2h0PSI3MjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyODAiIGhlaWdodD0iNzIwIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPlZpZGVvIFByZXZpZXc8L3RleHQ+PC9zdmc+'}
               alt={video?.title || 'Video thumbnail'}
+              onLoad={() => {
+                console.log('Thumbnail loaded successfully:', video?.thumbnailUrl);
+                console.log('Video data:', video);
+              }}
               onError={(e) => {
                 console.error('Thumbnail failed to load:', video?.thumbnailUrl);
                 console.error('Error event:', e);
@@ -713,25 +738,6 @@ I'm sending the payment from my wallet. Please confirm the transaction and provi
         {purchaseError && (
           <Alert severity="error" sx={{ mb: 3 }}>
             {purchaseError}
-          </Alert>
-        )}
-        
-        {/* Mensagem de Cancelamento de Pagamento */}
-        {showCancelMessage && (
-          <Alert 
-            severity="success" 
-            sx={{ mb: 3 }}
-            onClose={() => setShowCancelMessage(false)}
-          >
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-              ✅ REDIRECIONAMENTO WHOP FUNCIONANDO!
-            </Typography>
-            <Typography variant="body2">
-              Pagamento cancelado. Você foi redirecionado de volta com sucesso do checkout do Whop.
-            </Typography>
-            <Typography variant="caption" component="div" sx={{ mt: 1, opacity: 0.7, fontFamily: 'monospace' }}>
-              URL: ?payment_canceled=true
-            </Typography>
           </Alert>
         )}
         
@@ -877,46 +883,67 @@ I'm sending the payment from my wallet. Please confirm the transaction and provi
                 <Grid container spacing={2} justifyContent="center" alignItems="stretch" sx={{ mb: 2 }}>
                   <Grid item xs={12} md={8}>
                     <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, alignItems: 'stretch' }}>
-                      {/* Stripe Button - Only show if configured */}
-                      {!configLoading && stripePublishableKey && stripePublishableKey.trim() !== '' && (
-                        <Button
-                          variant="contained"
-                          fullWidth
-                          onClick={handleStripePaymentRedirect}
-                          disabled={isStripeLoading}
-                          sx={{
-                            py: 2,
-                            backgroundColor: '#2e7d32',
-                            color: 'white',
-                            fontWeight: 'bold',
-                            fontSize: 18,
-                            '&:hover': { backgroundColor: '#1b5e20' },
-                            '&:disabled': { backgroundColor: '#9e9e9e', color: '#fff' }
+                      <Button
+                        variant="contained"
+                        fullWidth
+                        onClick={handleStripePaymentRedirect}
+                        disabled={isStripeLoading || !stripePublishableKey}
+                        sx={{
+                          py: 2,
+                          backgroundColor: '#2e7d32',
+                          color: 'white',
+                          fontWeight: 'bold',
+                          fontSize: 18,
+                          '&:hover': { backgroundColor: '#1b5e20' },
+                          '&:disabled': { backgroundColor: '#9e9e9e', color: '#fff' }
+                        }}
+                      >
+                        {isStripeLoading ? 'Processing…' : 'Pay instatly'}
+                      </Button>
+                      {!configLoading && paypalClientId && paypalClientId.trim() !== '' ? (
+                        <Box 
+                          sx={{ 
+                            flex: 1, 
+                            minHeight: 48, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            width: '100%'
                           }}
+                          key={`paypal-${paypalClientId.substring(0, 10)}`}
                         >
-                          {isStripeLoading ? 'Processing…' : 'PAY'}
-                        </Button>
-                      )}
-                      
-                      {/* Whop Button - Only show if configured */}
-                      {!configLoading && whoApiKey && whoApiKey.trim() !== '' ? (
-                        <Button
-                          variant="contained"
-                          fullWidth
-                          onClick={handleWhoPaymentRedirect}
-                          disabled={isStripeLoading || !whoApiKey}
-                          sx={{
-                            py: 2,
-                            backgroundColor: '#1976d2',
-                            color: 'white',
-                            fontWeight: 'bold',
-                            fontSize: 18,
-                            '&:hover': { backgroundColor: '#1565c0' },
-                            '&:disabled': { backgroundColor: '#9e9e9e', color: '#fff' }
-                          }}
-                        >
-                          {isStripeLoading ? 'Processing…' : 'PAY'}
-                        </Button>
+                          <PayPalScriptProvider 
+                            options={{ 
+                              clientId: paypalClientId, 
+                              currency: 'USD',
+                              intent: 'capture',
+                              components: 'buttons',
+                              enableFunding: 'paylater,venmo',
+                              dataSdkIntegrationSource: 'button-factory'
+                            }}
+                            deferLoading={false}
+                          >
+                            <PayPalButtons
+                              createOrder={createOrder}
+                              onApprove={onApprove}
+                              onError={(err) => {
+                                console.error('PayPal error:', err);
+                                setPurchaseError('PayPal payment failed. Please try again.');
+                              }}
+                              onCancel={(data) => {
+                                console.log('PayPal payment cancelled:', data);
+                              }}
+                              fundingSource={undefined}
+                              style={{
+                                layout: 'vertical',
+                                color: 'gold',
+                                shape: 'rect',
+                                label: 'paypal',
+                                height: 48
+                              }}
+                            />
+                          </PayPalScriptProvider>
+                        </Box>
                       ) : configLoading ? (
                         <Box sx={{ flex: 1, minHeight: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <CircularProgress size={24} />
@@ -933,7 +960,6 @@ I'm sending the payment from my wallet. Please confirm the transaction and provi
                     </Box>
                   </Grid>
                 </Grid>
-
                   {telegramUsername && (
                   <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                       <Button

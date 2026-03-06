@@ -126,7 +126,7 @@ async function writeJsonFile(filePath, data) {
       throw new Error('Data integrity check failed after write');
     }
     
-    // console.log(`Successfully wrote ${data.length} videos to ${filePath}`);
+    console.log(`Successfully wrote ${data.length} videos to ${filePath}`);
   } catch (error) {
     console.error('Error writing JSON file:', error);
     throw error;
@@ -260,7 +260,7 @@ router.post('/videos', async (req, res) => {
       .single();
     if (error) throw error;
     
-    // console.log(`Video ${createdVideo.id} created successfully`);
+    console.log(`Video ${createdVideo.id} created successfully`);
     res.status(201).json(createdVideo);
   } catch (error) {
     console.error('Error creating video:', error);
@@ -311,7 +311,7 @@ router.put('/videos/:id', async (req, res) => {
       return res.status(404).json({ error: 'Video not found' });
     }
     
-    // console.log(`Video ${req.params.id} updated successfully`);
+    console.log(`Video ${req.params.id} updated successfully`);
     res.json(updatedVideo);
   } catch (error) {
     console.error('Error updating video:', error);
@@ -566,7 +566,7 @@ router.get('/test', (req, res) => {
 // Limpar cache do frontend
 router.post('/clear-cache', (req, res) => {
   try {
-    // console.log('Cache clear requested');
+    console.log('Cache clear requested');
     res.json({ 
       success: true, 
       message: 'Cache clear signal sent',
@@ -583,7 +583,7 @@ router.post('/clear-cache', (req, res) => {
 
 // Gerar URL assinada para arquivo no Wasabi
 router.get('/signed-url/:fileId', async (req, res) => {
-  // console.log('Signed URL endpoint called with fileId:', req.params.fileId);
+  console.log('Signed URL endpoint called with fileId:', req.params.fileId);
   try {
     const { fileId } = req.params;
     
@@ -791,126 +791,9 @@ router.post('/create-checkout-session', async (req, res) => {
   }
 });
 
-// Criar sessão de checkout do Whop
-router.post('/create-who-checkout', async (req, res) => {
-  try {
-    const { 
-      amount, 
-      currency = 'usd', 
-      product_name, 
-      success_url, 
-      cancel_url
-    } = req.body;
-    
-    if (!amount || !success_url || !cancel_url) {
-      return res.status(400).json({ error: 'Missing required parameters' });
-    }
-
-    if (!requireSupabase(res)) return;
-    const { data: siteConfig, error: cfgErr } = await supabase.from('site_config').select('who_api_key').limit(1).maybeSingle();
-    if (cfgErr) throw cfgErr;
-    const whoApiKey = siteConfig?.who_api_key;
-
-    if (!whoApiKey) {
-      return res.status(500).json({ error: 'Whop API key not configured' });
-    }
-
-    // 🎯 SISTEMA AUTOMÁTICO DE MATCHING DE PREÇOS
-    // Busca todos os planos disponíveis e encontra o que melhor combina com o preço do vídeo
-    
-    // console.log(`💰 Buscando plano para preço: $${amount/100} ${currency.toUpperCase()}`);
-    
-    // Buscar TODOS os planos disponíveis
-    const plansResponse = await fetch('https://api.whop.com/api/v2/plans', {
-      headers: {
-        'Authorization': `Bearer ${whoApiKey}`,
-      },
-    });
-    
-    if (!plansResponse.ok) {
-      throw new Error('Could not fetch plans. Please create plans in Whop dashboard first.');
-    }
-    
-    const plansData = await plansResponse.json();
-    
-    if (!plansData.data || plansData.data.length === 0) {
-      throw new Error('No plans found. Please create at least one plan in Whop dashboard first.');
-    }
-    
-    // Encontrar o plano com o preço mais próximo do vídeo
-    const videoPrice = amount / 100; // Converter de centavos para dólares
-    let bestMatch = null;
-    let smallestDifference = Infinity;
-    
-    // console.log(`📋 Analisando ${plansData.data.length} planos disponíveis:`);
-    
-    for (const plan of plansData.data) {
-      const planPrice = parseFloat(plan.initial_price || plan.renewal_price || '0');
-      const difference = Math.abs(planPrice - videoPrice);
-      
-      // console.log(`   - Plan ${plan.id}: $${planPrice} (diferença: $${difference.toFixed(2)})`);
-      
-      if (difference < smallestDifference) {
-        smallestDifference = difference;
-        bestMatch = plan;
-      }
-    }
-    
-    if (!bestMatch) {
-      throw new Error('Could not find a suitable plan. Please create plans in Whop dashboard.');
-    }
-    
-    // console.log(`✅ Plano selecionado: ${bestMatch.id} ($${parseFloat(bestMatch.initial_price || bestMatch.renewal_price)})`);
-    // console.log(`   Diferença de preço: $${smallestDifference.toFixed(2)}`);
-    
-    const payload = {
-      plan_id: bestMatch.id,
-      success_url: success_url,
-      cancel_url: cancel_url,
-    };
-    
-    const response = await fetch('https://api.whop.com/api/v2/checkout_sessions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${whoApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-      } catch {
-        errorData = { error: errorText || `Whop API error: ${response.status}` };
-      }
-      console.error('Whop API error:', errorData);
-      throw new Error(errorData.error || errorData.message || `Whop API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    // Whop checkout_sessions retorna: { id, purchase_url, plan_id, company_id }
-    res.json({
-      success: true,
-      sessionId: data.id,
-      checkout_url: data.purchase_url, // URL completa para redirecionamento
-    });
-
-  } catch (error) {
-    console.error('Error creating Whop checkout session:', error);
-    res.status(500).json({ 
-      error: 'Failed to create checkout session',
-      details: error.message 
-    });
-  }
-});
-
 // Deletar arquivo do Wasabi
 router.delete('/delete-file/:fileId', async (req, res) => {
-  // console.log('Delete file endpoint called with fileId:', req.params.fileId);
+  console.log('Delete file endpoint called with fileId:', req.params.fileId);
   try {
     const { fileId } = req.params;
     
@@ -924,13 +807,13 @@ router.delete('/delete-file/:fileId', async (req, res) => {
       return res.status(500).json({ error: 'Wasabi configuration not found' });
     }
     
-    // console.log('Wasabi config for delete:', {
-    //   region: wasabiConfig.region,
-    //   bucket: wasabiConfig.bucket,
-    //   endpoint: wasabiConfig.endpoint,
-    //   hasAccessKey: !!wasabiConfig.accessKey,
-    //   hasSecretKey: !!wasabiConfig.secretKey
-    // });
+    console.log('Wasabi config for delete:', {
+      region: wasabiConfig.region,
+      bucket: wasabiConfig.bucket,
+      endpoint: wasabiConfig.endpoint,
+      hasAccessKey: !!wasabiConfig.accessKey,
+      hasSecretKey: !!wasabiConfig.secretKey
+    });
 
     const s3Client = new S3Client({
       region: wasabiConfig.region,
@@ -1021,7 +904,7 @@ router.get('/backup/status', async (req, res) => {
 
 // Upload de metadados para Wasabi
 router.post('/upload/metadata', upload.single('file'), async (req, res) => {
-  // console.log('Metadata upload endpoint called');
+  console.log('Metadata upload endpoint called');
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -1070,18 +953,18 @@ router.post('/upload/metadata', upload.single('file'), async (req, res) => {
 
 // Upload de arquivo para Wasabi
 router.post('/upload/:folder', upload.single('file'), async (req, res) => {
-  // console.log(`Upload endpoint called: /upload/${req.params.folder}`);
+  console.log(`Upload endpoint called: /upload/${req.params.folder}`);
   try {
     const { folder } = req.params; // 'videos' ou 'thumbnails'
     
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    // console.log('Incoming file:', {
-    //   originalname: req.file.originalname,
-    //   mimetype: req.file.mimetype,
-    //   size: req.file.size,
-    // });
+    console.log('Incoming file:', {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+    });
 
     const wasabiConfig = await getWasabiConfigFromServer();
 
@@ -1105,7 +988,7 @@ router.post('/upload/:folder', upload.single('file'), async (req, res) => {
     const randomId = Math.random().toString(36).substring(2, 15);
     const fileExtension = req.file.originalname.split('.').pop() || '';
     const fileName = `${folder}/${timestamp}_${randomId}.${fileExtension}`;
-    // console.log('Generated Wasabi key:', fileName);
+    console.log('Generated Wasabi key:', fileName);
 
     // Fazer upload para o Wasabi
     const uploadCommand = new PutObjectCommand({
@@ -1116,7 +999,7 @@ router.post('/upload/:folder', upload.single('file'), async (req, res) => {
     });
 
     await s3Client.send(uploadCommand);
-    // console.log('Wasabi upload success:', fileName);
+    console.log('Wasabi upload success:', fileName);
 
     // URL do arquivo
     const fileUrl = `https://${wasabiConfig.bucket}.s3.${wasabiConfig.region}.wasabisys.com/${fileName}`;

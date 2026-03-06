@@ -83,8 +83,8 @@ class WasabiService {
       const endpoint = `/api/upload/${folder}`;
       const fullUrl = `${baseUrl}${endpoint}`;
       
-      // console.log(`Uploading file to: ${fullUrl}`);
-      // console.log(`File: ${file.name}, Size: ${file.size}, Type: ${file.type}`);
+      console.log(`Uploading file to: ${fullUrl}`);
+      console.log(`File: ${file.name}, Size: ${file.size}, Type: ${file.type}`);
       
       const response = await fetch(fullUrl, {
         method: 'POST',
@@ -121,23 +121,22 @@ class WasabiService {
       // Usar o servidor para gerar URL assinada
       const baseUrl = import.meta.env.DEV ? 'http://localhost:3000' : '';
       const encodedFileId = encodeURIComponent(fileId);
-      // console.log('Requesting signed URL for fileId:', fileId, 'encoded:', encodedFileId);
+      console.log('Requesting signed URL for fileId:', fileId, 'encoded:', encodedFileId);
       const response = await fetch(`${baseUrl}/api/signed-url/${encodedFileId}`);
       
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.url) {
-          // console.log('Signed URL obtained:', result.url);
+          console.log('Signed URL obtained:', result.url);
           return result.url;
         }
+      } else {
+        console.error('Failed to get signed URL:', response.status, response.statusText);
       }
-      // else {
-      //   console.error('Failed to get signed URL:', response.status, response.statusText);
-      // }
       
-      // console.warn('Failed to get signed URL, falling back to direct URL');
+      console.warn('Failed to get signed URL, falling back to direct URL');
     } catch (error) {
-      // console.warn('Error getting signed URL:', error);
+      console.warn('Error getting signed URL:', error);
     }
     
     // Fallback para URL direta (pode não funcionar se o bucket for privado)
@@ -156,23 +155,22 @@ class WasabiService {
       // Usar o servidor para gerar URL assinada
       const baseUrl = import.meta.env.DEV ? 'http://localhost:3000' : '';
       const encodedThumbnailId = encodeURIComponent(thumbnailId);
-      // console.log('Requesting signed URL for thumbnailId:', thumbnailId, 'encoded:', encodedThumbnailId);
+      console.log('Requesting signed URL for thumbnailId:', thumbnailId, 'encoded:', encodedThumbnailId);
       const response = await fetch(`${baseUrl}/api/signed-url/${encodedThumbnailId}`);
       
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.url) {
-          // console.log('Signed URL for thumbnail obtained:', result.url);
+          console.log('Signed URL for thumbnail obtained:', result.url);
           return result.url;
         }
+      } else {
+        console.error('Failed to get signed URL for thumbnail:', response.status, response.statusText);
       }
-      // else {
-      //   console.error('Failed to get signed URL for thumbnail:', response.status, response.statusText);
-      // }
       
-      // console.warn('Failed to get signed URL for thumbnail, falling back to direct URL');
+      console.warn('Failed to get signed URL for thumbnail, falling back to direct URL');
     } catch (error) {
-      // console.warn('Error getting signed URL for thumbnail:', error);
+      console.warn('Error getting signed URL for thumbnail:', error);
     }
     
     // Fallback para URL direta (pode não funcionar se o bucket for privado)
@@ -199,11 +197,11 @@ class WasabiService {
         const result = await response.json();
         return result.success || false;
       } else {
-        // console.error('Failed to delete file:', response.status, response.statusText);
+        console.error('Failed to delete file:', response.status, response.statusText);
         return false;
       }
     } catch (error) {
-      // console.error('Error deleting file from Wasabi:', error);
+      console.error('Error deleting file from Wasabi:', error);
       return false;
     }
   }
@@ -217,7 +215,7 @@ class WasabiService {
       const response = await fetch(url, { method: 'HEAD' });
       return response.ok;
     } catch (error) {
-      // console.error('Error checking file existence:', error);
+      console.error('Error checking file existence:', error);
       return false;
     }
   }
@@ -231,7 +229,7 @@ class WasabiService {
       // Em produção, você usaria a API do Wasabi para listar arquivos
       return [];
     } catch (error) {
-      // console.error('Error listing files:', error);
+      console.error('Error listing files:', error);
       return [];
     }
   }

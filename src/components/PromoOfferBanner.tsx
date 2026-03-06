@@ -8,7 +8,6 @@ import CheckIcon from '@mui/icons-material/CheckCircleOutline';
 import TelegramIcon from '@mui/icons-material/Telegram';
 import { useSiteConfig } from '../context/SiteConfigContext';
 import { StripeService } from '../services/StripeService';
-import { WhoService } from '../services/WhoService';
 
 interface PromoOfferBannerProps {
   telegramLink?: string; // full URL override
@@ -24,8 +23,7 @@ const getRandomInt = (min: number, max: number) => {
 
 const PromoOfferBanner = ({ telegramLink, telegramUsername, prefilledMessage }: PromoOfferBannerProps) => {
   const [isStripeLoading, setIsStripeLoading] = useState(false);
-  const [isWhopLoading, setIsWhopLoading] = useState(false);
-  const { stripePublishableKey, whoApiKey, loading: configLoading } = useSiteConfig();
+  const { stripePublishableKey } = useSiteConfig();
 
   const interestMessage = prefilledMessage || "Hi! I'm interested in the $100 offer including all content. Could you guide me on how to pay?";
   const computedTelegramHref = (() => {
@@ -43,7 +41,7 @@ const PromoOfferBanner = ({ telegramLink, telegramUsername, prefilledMessage }: 
     }
   })();
 
-  // Handle Stripe payment for $100 offer
+  // Handle Stripe payment for $135 offer
   const handleStripePayment = async () => {
     if (!stripePublishableKey) {
       alert('Stripe configuration is missing. Please contact support.');
@@ -65,9 +63,9 @@ const PromoOfferBanner = ({ telegramLink, telegramUsername, prefilledMessage }: 
       ];
       const randomProductName = productNames[Math.floor(Math.random() * productNames.length)];
       
-      // Build success and cancel URLs (usando HashRouter)
-      const successUrl = `${window.location.origin}/#/payment-success?session_id={CHECKOUT_SESSION_ID}&payment_method=stripe&offer_type=all_content&price=100`;
-      const cancelUrl = `${window.location.origin}/#/?payment_canceled=true`;
+      // Build success and cancel URLs
+      const successUrl = `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}&payment_method=stripe&offer_type=all_content&price=85`;
+      const cancelUrl = `${window.location.origin}/?payment_canceled=true`;
       
       // Create checkout session
       const sessionId = await StripeService.createCheckoutSession(
@@ -86,53 +84,6 @@ const PromoOfferBanner = ({ telegramLink, telegramUsername, prefilledMessage }: 
       alert('Failed to initialize payment. Please try again.');
     } finally {
       setIsStripeLoading(false);
-    }
-  };
-
-  // Handle Whop payment for $100 offer
-  const handleWhopPayment = async () => {
-    if (!whoApiKey) {
-      alert('Whop configuration is missing. Please contact support.');
-      return;
-    }
-    
-    try {
-      setIsWhopLoading(true);
-      
-      // Initialize WhoService with API key
-      WhoService.initWho(whoApiKey);
-      
-      // Generate a random product name for privacy
-      const productNames = [
-        "Premium Content Package",
-        "Digital Media Collection",
-        "Exclusive Content Bundle",
-        "Premium Access Package"
-      ];
-      const randomProductName = productNames[Math.floor(Math.random() * productNames.length)];
-      
-      // Build success and cancel URLs (usando HashRouter)
-      // Nota: session_id será gerado automaticamente na página de sucesso
-      const successUrl = `${window.location.origin}/#/payment-success?payment_method=who&offer_type=all_content&price=100`;
-      const cancelUrl = `${window.location.origin}/#/?payment_canceled=true`;
-      
-      // Create checkout session
-      const checkoutUrl = await WhoService.createCheckoutSession(
-        100, // $100 price
-        'usd',
-        randomProductName,
-        successUrl,
-        cancelUrl
-      );
-      
-      // Redirect to checkout
-      await WhoService.redirectToCheckout(checkoutUrl);
-      
-    } catch (error) {
-      console.error('Error processing Whop payment:', error);
-      alert('Failed to initialize payment. Please try again.');
-    } finally {
-      setIsWhopLoading(false);
     }
   };
 
@@ -213,47 +164,23 @@ const PromoOfferBanner = ({ telegramLink, telegramUsername, prefilledMessage }: 
                     Telegram
                   </Button>
                   
-                  {/* Stripe Payment Button - Only show if configured */}
-                  {!configLoading && stripePublishableKey && stripePublishableKey.trim() !== '' && (
-                    <Button
-                      variant="contained"
-                      onClick={handleStripePayment}
-                      disabled={isStripeLoading}
-                      color="primary"
-                      size="small"
-                      sx={{
-                        fontWeight: 700,
-                        px: 2.5,
-                        py: 0.75,
-                        borderRadius: 1.5,
-                        fontSize: '0.85rem',
-                        boxShadow: 3,
-                      }}
-                    >
-                      {isStripeLoading ? 'Processing...' : 'PAY'}
-                    </Button>
-                  )}
-                  
-                  {/* Whop Payment Button - Only show if configured */}
-                  {!configLoading && whoApiKey && whoApiKey.trim() !== '' && (
-                    <Button
-                      variant="contained"
-                      onClick={handleWhopPayment}
-                      disabled={isWhopLoading}
-                      color="primary"
-                      size="small"
-                      sx={{
-                        fontWeight: 700,
-                        px: 2.5,
-                        py: 0.75,
-                        borderRadius: 1.5,
-                        fontSize: '0.85rem',
-                        boxShadow: 3,
-                      }}
-                    >
-                      {isWhopLoading ? 'Processing...' : 'PAY'}
-                    </Button>
-                  )}
+                  <Button
+                    variant="contained"
+                    onClick={handleStripePayment}
+                    disabled={isStripeLoading || !stripePublishableKey}
+                    color="primary"
+                    size="small"
+                    sx={{
+                      fontWeight: 700,
+                      px: 2.5,
+                      py: 0.75,
+                      borderRadius: 1.5,
+                      fontSize: '0.85rem',
+                      boxShadow: 3,
+                    }}
+                  >
+                    {isStripeLoading ? 'Processing...' : 'Pay $100 Now'}
+                  </Button>
                 </Box>
               </Box>
             </Box>

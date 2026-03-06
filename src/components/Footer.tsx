@@ -1,6 +1,5 @@
 import type { FC } from 'react';
 import { useState, useEffect } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
@@ -12,20 +11,16 @@ import Button from '@mui/material/Button';
 import WarningIcon from '@mui/icons-material/Warning';
 import Divider from '@mui/material/Divider';
 import SettingsIcon from '@mui/icons-material/Settings';
-import SecurityIcon from '@mui/icons-material/Security';
-import PaymentIcon from '@mui/icons-material/Payment';
-import HttpsIcon from '@mui/icons-material/Https';
-import TelegramIcon from '@mui/icons-material/Telegram';
 
 const Footer: FC = () => {
   const currentYear = new Date().getFullYear();
   const theme = useTheme();
-  const { siteName, telegramUsername } = useSiteConfig();
+  const { siteName } = useSiteConfig();
   const [showSecretButton, setShowSecretButton] = useState(false);
   const [credentials, setCredentials] = useState({ projectId: '', apiKey: '' });
   
   const handleBuyTemplate = () => {
-    window.open('https://t.me/nlyadm21', '_blank');
+    window.open('https://t.me/admUnlock', '_blank');
   };
 
   // Detectar combinação de teclas para mostrar botão secreto (Ctrl + Alt + S)
@@ -80,8 +75,8 @@ const Footer: FC = () => {
       <Box 
         sx={{ 
           background: theme.palette.mode === 'dark' 
-            ? 'rgba(139,30,63,0.12)' 
-            : 'rgba(139,30,63,0.06)', 
+            ? 'rgba(13,71,161,0.08)' 
+            : 'rgba(13,71,161,0.04)', 
           p: 1.5, 
           mb: 3,
           borderRadius: 1.5,
@@ -90,8 +85,8 @@ const Footer: FC = () => {
           maxWidth: 1200,
           mx: 'auto',
           border: theme.palette.mode === 'dark'
-            ? '1px solid rgba(139,30,63,0.25)'
-            : '1px solid rgba(139,30,63,0.15)'
+            ? '1px solid rgba(13,71,161,0.2)'
+            : '1px solid rgba(13,71,161,0.1)'
         }}
       >
         <WarningIcon sx={{ color: theme.palette.primary.main, mr: 1.5, fontSize: '1.2rem' }} />
@@ -104,7 +99,7 @@ const Footer: FC = () => {
         <Grid container spacing={4}>
           <Grid item xs={12} md={4}>
             <Box sx={{ mb: 3 }}>
-              <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 'bold', mb: 2 }}>
+              <Typography variant="h6" sx={{ color: '#d32f2f', fontWeight: 'bold', mb: 2 }}>
                 {siteName}
               </Typography>
               <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)' }}>
@@ -115,14 +110,13 @@ const Footer: FC = () => {
             </Box>
           </Grid>
           
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} md={4}>
             <Typography variant="h6" sx={{ color: theme.palette.text.primary, fontWeight: 'bold', mb: 2 }}>
               Quick Links
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
               <Link 
-                component={RouterLink}
-                to="/" 
+                href="/" 
                 underline="hover" 
                 sx={{ 
                   mb: 1.5, 
@@ -135,8 +129,7 @@ const Footer: FC = () => {
                 Home
               </Link>
               <Link 
-                component={RouterLink}
-                to="/videos" 
+                href="/videos" 
                 underline="hover" 
                 sx={{ 
                   mb: 1.5, 
@@ -148,107 +141,11 @@ const Footer: FC = () => {
               >
                 Videos
               </Link>
-              <Link 
-                component={RouterLink}
-                to="/about" 
-                underline="hover" 
-                sx={{ 
-                  mb: 1.5, 
-                  color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
-                  '&:hover': {
-                    color: '#d32f2f'
-                  }
-                }}
-              >
-                About Us
-              </Link>
-              <Link 
-                component={RouterLink}
-                to="/faq" 
-                underline="hover" 
-                sx={{ 
-                  mb: 1.5, 
-                  color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
-                  '&:hover': {
-                    color: '#d32f2f'
-                  }
-                }}
-              >
-                FAQ
-              </Link>
-            </Box>
-          </Grid>
-          
-          <Grid item xs={12} md={3}>
-            <Typography variant="h6" sx={{ color: theme.palette.text.primary, fontWeight: 'bold', mb: 2 }}>
-              Legal
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Link 
-                component={RouterLink}
-                to="/terms" 
-                underline="hover" 
-                sx={{ 
-                  mb: 1.5, 
-                  color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
-                  '&:hover': {
-                    color: '#d32f2f'
-                  }
-                }}
-              >
-                Terms of Service
-              </Link>
-              <Link 
-                component={RouterLink}
-                to="/privacy" 
-                underline="hover" 
-                sx={{ 
-                  mb: 1.5, 
-                  color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
-                  '&:hover': {
-                    color: '#d32f2f'
-                  }
-                }}
-              >
-                Privacy Policy
-              </Link>
-              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)', mb: 1 }}>
-                USC 2257 Compliance
-              </Typography>
-            </Box>
-          </Grid>
-          
-          <Grid item xs={12} md={2}>
-            <Typography variant="h6" sx={{ color: theme.palette.text.primary, fontWeight: 'bold', mb: 2 }}>
-              Support
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              {telegramUsername && (
-                <Link 
-                  href={`https://t.me/${telegramUsername}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  underline="hover" 
-                  sx={{ 
-                    mb: 1.5, 
-                    color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.5,
-                    '&:hover': {
-                      color: '#0088cc'
-                    }
-                  }}
-                >
-                  <TelegramIcon sx={{ fontSize: 18 }} />
-                  Contact Us
-                </Link>
-              )}
               <Box 
                 sx={{ 
                   display: 'flex', 
                   alignItems: 'center',
-                  color: theme.palette.primary.main,
+                  color: '#d32f2f',
                   mt: 1,
                   background: theme.palette.mode === 'dark' ? 'rgba(142,36,170,0.1)' : 'rgba(211,47,47,0.06)',
                   px: 1.5,
@@ -266,94 +163,34 @@ const Footer: FC = () => {
           
           <Grid item xs={12} md={4}>
             <Typography variant="h6" sx={{ color: theme.palette.text.primary, fontWeight: 'bold', mb: 2 }}>
-              Security & Trust
+              Legal Information
             </Typography>
-            <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)', mb: 2 }} paragraph>
-              Your security and privacy are our top priorities. We use industry-leading encryption and security measures.
+            <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)' }} paragraph>
+              This website contains adult-oriented material intended for individuals 18 years of age or older. 
+              All models appearing on this website were 18 years of age or older at the time of production.
             </Typography>
-            
-            {/* Trust Badges */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <HttpsIcon sx={{ color: '#4caf50', fontSize: 20 }} />
-                <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)' }}>
-                  SSL Encrypted Connection
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <PaymentIcon sx={{ color: theme.palette.primary.main, fontSize: 20 }} />
-                <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)' }}>
-                  Secure Payment Processing
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <SecurityIcon sx={{ color: theme.palette.primary.main, fontSize: 20 }} />
-                <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)' }}>
-                  Discreet Billing
-                </Typography>
-              </Box>
-            </Box>
+            <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)' }} paragraph>
+              USC 2257 Record-Keeping Requirements Compliance Statement
+            </Typography>
           </Grid>
         </Grid>
         
-        {/* Payment Methods */}
-        <Box 
-          sx={{ 
-            mt: 4,
-            mb: 3,
-            p: 3,
-            borderRadius: 2,
-            background: theme.palette.mode === 'dark' 
-              ? 'rgba(26,26,26,0.5)' 
-              : 'rgba(255,255,255,0.5)',
-            border: theme.palette.mode === 'dark'
-              ? '1px solid rgba(255,255,255,0.08)'
-              : '1px solid rgba(0,0,0,0.05)',
-            textAlign: 'center'
-          }}
-        >
-          <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2, fontWeight: 600 }}>
-            Secure Payment Methods Accepted
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 600 }}>
-              💳 Stripe
-            </Typography>
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 600 }}>
-              💰 PayPal
-            </Typography>
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 600 }}>
-              🔒 SSL Secure
-            </Typography>
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 600 }}>
-              ✓ PCI-DSS Compliant
-            </Typography>
-          </Box>
-        </Box>
-        
-        <Divider sx={{ my: 3, borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }} />
+        <Divider sx={{ my: 4, borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }} />
         
         <Box 
           sx={{ 
             display: 'flex', 
             flexDirection: { xs: 'column', md: 'row' },
             alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 2
+            justifyContent: 'space-between'
           }}
         >
           <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)' }}>
-            &copy; {currentYear} {siteName}. All rights reserved. Adults only (18+).
+            &copy; {currentYear} {siteName}. All rights reserved. Adults only.
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-            <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)' }}>
-              🔒 Secure & Private
-            </Typography>
-            <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)' }}>
-              • Discreet Billing
-            </Typography>
-            <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)' }}>
-              • GDPR Compliant
+          <Box sx={{ display: 'flex', alignItems: 'center', mt: { xs: 2, md: 0 } }}>
+            <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)' }}>
+              By accessing this site you agree that you are at least 18 years old
             </Typography>
             
             {/* Botão secreto - aparece com Ctrl + Alt + S */}
@@ -365,11 +202,11 @@ const Footer: FC = () => {
                 onClick={handleSecretConfig}
                 sx={{ 
                   ml: 2,
-                  borderColor: theme.palette.primary.main,
-                  color: theme.palette.primary.main,
+                  borderColor: '#d32f2f',
+                  color: '#d32f2f',
                   '&:hover': { 
-                    borderColor: '#5a1a1a',
-                    color: '#5a1a1a'
+                    borderColor: '#b71c1c',
+                    color: '#b71c1c'
                   }
                 }}
               >

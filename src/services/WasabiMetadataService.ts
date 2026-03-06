@@ -36,7 +36,8 @@ export interface SessionData {
 
 export interface SiteConfigData {
   siteName: string;
-  whoApiKey: string;
+  paypalClientId: string;
+  paypalMeUsername: string;
   stripePublishableKey: string;
   stripeSecretKey: string;
   telegramUsername: string;
@@ -74,6 +75,8 @@ class WasabiMetadataService {
   // Carregar dados do Wasabi
   private async loadDataFromWasabi(): Promise<any> {
     try {
+      console.log('Loading metadata from Wasabi...');
+      
       // Inicializar wasabiService se necessário
       await wasabiService.initialize({
         accessKey: import.meta.env.VITE_WASABI_ACCESS_KEY || '',
@@ -93,6 +96,7 @@ class WasabiMetadataService {
       }
       
       const data = await response.json();
+      console.log('Metadata loaded from Wasabi:', data);
       
       // Atualizar cache
       this.cache = data;
@@ -109,7 +113,8 @@ class WasabiMetadataService {
         sessions: [],
         siteConfig: {
           siteName: 'VideosPlus',
-          whoApiKey: '',
+          paypalClientId: '',
+          paypalMeUsername: '',
           stripePublishableKey: '',
           stripeSecretKey: '',
           telegramUsername: '',
