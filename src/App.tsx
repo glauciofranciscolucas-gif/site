@@ -14,15 +14,11 @@ import Admin from './pages/Admin';
 import Home from './pages/Home';
 import PaymentSuccess from './pages/PaymentSuccess';
 import Box from '@mui/material/Box';
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import SplashAnimation from './components/SplashAnimation';
 import PaymentNotifications from './components/PaymentNotifications';
 import PrivacyNotice from './components/PrivacyNotice';
 import ScrollToTop from './components/ScrollToTop';
-import CustomAnalytics from './components/CustomAnalytics';
-
 // Componente AppContent para usar hooks que dependem do Router
 const AppContent: FC = () => {
   const { siteName } = useSiteConfig();
@@ -64,7 +60,6 @@ const AppContent: FC = () => {
       {enableSplash && showSplash && <SplashAnimation onAnimationComplete={handleAnimationComplete} />}
       <PrivacyNotice />
       <PaymentNotifications />
-      <CustomAnalytics />
       <Header />
       <Box component="main" sx={{ flexGrow: 1 }}>
         <ScrollToTop />
