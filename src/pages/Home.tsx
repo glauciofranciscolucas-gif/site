@@ -24,7 +24,6 @@ import VideoCard from '../components/VideoCard';
 import { VideoService, Video, SortOption } from '../services/VideoService';
 import { useSiteConfig } from '../context/SiteConfigContext';
 import FeaturedBanner from '../components/FeaturedBanner';
-import PromoOfferBanner from '../components/PromoOfferBanner';
 import DatabaseSetupModal from '../components/DatabaseSetupModal';
 import CredentialsStatus from '../components/CredentialsStatus';
 import ContactSection from '../components/ContactSection';
@@ -327,9 +326,6 @@ Please let me know if you need any assistance accessing your content.`;
         `}
       </style>
       
-      {/* Promoção especial */}
-      <PromoOfferBanner telegramUsername={telegramUsername} />
-
       {/* Banner de destaque */}
       <FeaturedBanner onError={handleBannerError} />
       
